@@ -1,0 +1,9 @@
+export { HomePage } from "./HomePage";
+export { Navbar } from "./Navbar";
+export { HeroSection } from "./HeroSection";
+export { TrajectorySection } from "./TrajectorySection";
+export { FeaturesSection } from "./FeaturesSection";
+export { InteractiveDemo } from "./InteractiveDemo";
+export { QuoteSection } from "./QuoteSection";
+export { CTASection } from "./CTASection";
+export { Footer } from "./Footer";
