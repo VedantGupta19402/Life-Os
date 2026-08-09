@@ -11,18 +11,42 @@ import {
   MoveUpRight,
 } from "lucide-react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError("");
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
 
     try {
       setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 700));
-    } catch (error) {
-      console.error("Login failed:", error);
+
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed.");
+      }
+
+      console.log("Login success:", data.user);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
+      setError(message);
+      console.error("Login failed:", err);
     } finally {
       setIsLoading(false);
     }
@@ -241,6 +265,11 @@ const LoginPage = () => {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-3.5">
+                {error ? (
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </p>
+                ) : null}
 
                 {/* Email */}
                 <div>
