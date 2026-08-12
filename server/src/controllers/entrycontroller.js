@@ -41,11 +41,11 @@ async function createEntry(req, res) {
 
         res.status(200).json({
             message: "entry created successfully",
-            entry: entry
+            entry: entry,
         });
 
     } catch(error) {
-
+        console.log(error)
         res.status(500).json({
             message: "failed to create entry"
         });
@@ -100,6 +100,7 @@ async function getTodayEntry(req, res) {
         res.status(500).json({
             message: "failed to fetch today's entry"
         });
+        console.log(error)
 
     }
 }

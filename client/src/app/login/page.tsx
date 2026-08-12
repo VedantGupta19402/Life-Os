@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Eye,
@@ -10,19 +11,25 @@ import {
   Mail,
   MoveUpRight,
 } from "lucide-react";
+import { authApi } from "@/lib/api";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const formData = new FormData(event.currentTarget);
     try {
       setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      setError("");
+      await authApi.login(String(formData.get("email")), String(formData.get("password")));
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Login failed:", error);
+      setError(error instanceof Error ? error.message : "Unable to log in right now.");
     } finally {
       setIsLoading(false);
     }
@@ -241,6 +248,7 @@ const LoginPage = () => {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-3.5">
+                {error && <p role="alert" className="rounded-lg bg-[#c9795d]/10 px-3 py-2 text-sm text-[#9a3e25]">{error}</p>}
 
                 {/* Email */}
                 <div>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -11,21 +12,31 @@ import {
   Mail,
   UserRound,
 } from "lucide-react";
+import { authApi } from "@/lib/api";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const formData = new FormData(event.currentTarget);
+    const password = String(formData.get("password"));
+    if (password !== String(formData.get("confirmPassword"))) {
+      setError("Passwords do not match.");
+      return;
+    }
     try {
       setIsLoading(true);
-
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      setError("");
+      await authApi.register(String(formData.get("name")), String(formData.get("email")), password);
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Registration failed:", error);
+      setError(error instanceof Error ? error.message : "Unable to create your account right now.");
     } finally {
       setIsLoading(false);
     }
@@ -340,6 +351,7 @@ const RegisterPage = () => {
               onSubmit={handleSubmit}
               className="space-y-3.5"
             >
+              {error && <p role="alert" className="rounded-lg bg-[#c9795d]/10 px-3 py-2 text-sm text-[#9a3e25]">{error}</p>}
 
               {/* Full name */}
               <div>

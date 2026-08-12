@@ -6,9 +6,9 @@ const authMiddleware = require("../middleware/authmiddileware");
 
 const router = express.Router();
 
-router.post("/", authMiddleware, entryController.createEntry);
+router.post("/create", authMiddleware, entryController.createEntry);
 
-router.get("/", authMiddleware, entryController.getEntries);
+router.get("/all", authMiddleware, entryController.getEntries);
 
 router.get("/today", authMiddleware, entryController.getTodayEntry);
 
