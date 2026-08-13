@@ -1,32 +1,34 @@
+"use client";
+
 import { ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useMemo, useState } from "react";
+import type { LifeEntry } from "@/lib/api";
 
-const labels = ["Aug 3", "Aug 4", "Aug 5", "Aug 6", "Aug 7", "Aug 8", "Aug 9"];
+const trends = {
+  focus: { label: "Focus Score", accessor: (entry: LifeEntry) => entry.focus, max: 10 },
+  mood: { label: "Mood", accessor: (entry: LifeEntry) => entry.mood, max: 10 },
+  energy: { label: "Energy", accessor: (entry: LifeEntry) => entry.energy, max: 10 },
+  sleep: { label: "Sleep", accessor: (entry: LifeEntry) => entry.sleep, max: 10 },
+} as const;
 
-export function TrajectoryChart() {
-  return (
-    <motion.section whileHover={{ y: -3 }} transition={{ duration: 0.22 }} className="relative overflow-hidden rounded-[10px] border border-[#e6ded2] bg-[#fcfaf6]">
-      <div className="flex items-center justify-between px-6 pb-4 pt-6">
-        <h2>Your Life Trajectory</h2>
-        <button className="flex min-w-[141px] items-center justify-center gap-3 rounded-lg border border-[#e1dbd1] px-3 py-2.5 text-[13px]">Focus Score <ChevronDown size={17} /></button>
-      </div>
-      <div className="grid grid-cols-[43px_1fr] px-6 pt-3">
-        <div className="flex h-[164px] flex-col justify-between text-[12px] text-[#5b625e]"><span>10</span><span>7.5</span><span>5</span><span>2.5</span><span>0</span></div>
-        <svg className="h-[164px] w-full overflow-visible" viewBox="0 0 680 190" preserveAspectRatio="none" role="img" aria-label="Focus score rises from four to nine over seven days">
-          <defs>
-            <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#173f35" stopOpacity=".18" />
-              <stop offset="100%" stopColor="#173f35" stopOpacity=".02" />
-            </linearGradient>
-          </defs>
-          {[12, 50, 88, 126, 164].map((y) => <line key={y} x1="0" y1={y} x2="680" y2={y} stroke="#dedbd2" strokeWidth="1" strokeDasharray="2 3" />)}
-          <path d="M0 98 C29 95 40 90 52 90 C79 87 99 51 135 51 C171 51 196 89 233 89 C259 89 270 87 287 88 C321 92 337 110 363 107 C390 106 413 68 443 64 C474 57 488 72 519 67 C555 63 594 18 631 14 L631 164 L0 164Z" fill="url(#chartFill)" />
-          <path d="M0 98 C29 95 40 90 52 90 C79 87 99 51 135 51 C171 51 196 89 233 89 C259 89 270 87 287 88 C321 92 337 110 363 107 C390 106 413 68 443 64 C474 57 488 72 519 67 C555 63 594 18 631 14" fill="none" stroke="#143e33" strokeWidth="2.5" strokeLinecap="round" />
-          {[[52,90],[135,51],[287,88],[363,107],[443,64],[519,67],[631,14]].map(([cx, cy], index) => <circle key={index} cx={cx} cy={cy} r={index === 6 ? 7 : 4} fill={index === 6 ? "#f4f1e9" : "#164638"} stroke="#164638" strokeWidth={index === 6 ? 4 : 1} />)}
-        </svg>
-        <div className="col-start-2 flex justify-between pt-3 text-[12px] text-[#59605c]">{labels.map((label, i) => <span key={label} className={i === 6 ? "font-bold text-[#192923]" : ""}>{label}</span>)}</div>
-      </div>
-      <div className="my-8 flex justify-center gap-7 text-[12px] uppercase text-[#5a605d]"><button className="border-b-2 border-[#123d32] px-2 pb-2 font-semibold text-[#102d25]">7 Days</button><button>30 Days</button><button>90 Days</button></div>
-    </motion.section>
-  );
+type Trend = keyof typeof trends;
+const formatDate = (date: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(`${date}T12:00:00`));
+
+export function TrajectoryChart({ entries }: { entries: LifeEntry[] }) {
+  const [trend, setTrend] = useState<Trend>("focus");
+  const [open, setOpen] = useState(false);
+  const chartEntries = useMemo(() => [...entries].sort((a, b) => a.date.localeCompare(b.date)).slice(-7), [entries]);
+  const config = trends[trend];
+  const points = chartEntries.map((entry, index) => {
+    const x = chartEntries.length === 1 ? 340 : 18 + (644 * index) / (chartEntries.length - 1);
+    return { x, y: 166 - (config.accessor(entry) / config.max) * 145, value: config.accessor(entry) };
+  });
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const area = points.length ? `${path} L ${points.at(-1)?.x} 166 L ${points[0].x} 166 Z` : "";
+
+  return <motion.section whileHover={{ y: -3 }} transition={{ duration: 0.22 }} className="relative overflow-visible rounded-[10px] border border-[#e6ded2] bg-[#fcfaf6]">
+    <div className="flex items-center justify-between px-6 pb-4 pt-6"><h2>Your Life Trajectory</h2><div className="relative"><button onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex min-w-[141px] items-center justify-center gap-3 rounded-lg border border-[#e1dbd1] bg-[#fcfaf6] px-3 py-2.5 text-[13px]">{config.label} <ChevronDown size={17} /></button>{open && <div className="absolute right-0 z-10 mt-2 w-36 rounded-lg border border-[#e1dbd1] bg-[#fcfaf6] p-1 shadow-lg">{(Object.keys(trends) as Trend[]).map((key) => <button key={key} onClick={() => { setTrend(key); setOpen(false); }} className="w-full rounded-md px-3 py-2 text-left text-[13px] hover:bg-[#efede5]">{trends[key].label}</button>)}</div>}</div></div>
+    <div className="grid grid-cols-[43px_1fr] px-6 pb-8 pt-3"><div className="flex h-[164px] flex-col justify-between text-[12px] text-[#5b625e]"><span>{config.max}</span><span>{config.max * .75}</span><span>{config.max / 2}</span><span>{config.max * .25}</span><span>0</span></div><svg className="h-[164px] w-full overflow-visible" viewBox="0 0 680 190" preserveAspectRatio="none" role="img" aria-label={`${config.label} history based on your entries`}><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#173f35" stopOpacity=".18" /><stop offset="100%" stopColor="#173f35" stopOpacity=".02" /></linearGradient></defs>{[21,57,93,129,166].map((y) => <line key={y} x1="0" y1={y} x2="680" y2={y} stroke="#dedbd2" strokeWidth="1" strokeDasharray="2 3" />)}<path d={area} fill="url(#chartFill)" /><path d={path} fill="none" stroke="#143e33" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />{points.map((point, index) => <circle key={`${point.x}-${point.value}`} cx={point.x} cy={point.y} r={index === points.length - 1 ? 6 : 4} fill={index === points.length - 1 ? "#f4f1e9" : "#164638"} stroke="#164638" strokeWidth={index === points.length - 1 ? 4 : 1} />)}</svg><div className="col-start-2 flex justify-between gap-2 pt-3 text-[12px] text-[#59605c]">{chartEntries.map((entry, index) => <span key={entry._id} className={index === chartEntries.length - 1 ? "font-bold text-[#192923]" : ""}>{formatDate(entry.date)}</span>)}</div></div>
+  </motion.section>;
 }

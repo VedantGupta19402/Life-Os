@@ -13,7 +13,7 @@ node_modules/
 # ============================================================
 # Environment & Secrets
 # ============================================================
-
+lifeos-a9101-firebase-adminsdk-fbsvc-72a4818c37.json
 .env
 .env.*
 !.env.example

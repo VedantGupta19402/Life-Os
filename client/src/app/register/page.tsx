@@ -13,11 +13,14 @@ import {
   UserRound,
 } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { auth } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -39,6 +42,31 @@ const RegisterPage = () => {
       setError(error instanceof Error ? error.message : "Unable to create your account right now.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsGoogleLoading(true);
+      setError("");
+
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+
+      console.log("Firebase Google user", {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+      });
+    } catch (googleError) {
+      setError(
+        googleError instanceof Error
+          ? googleError.message
+          : "Google sign-up could not be completed. Please try again.",
+      );
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -594,10 +622,12 @@ const RegisterPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex h-[46px] items-center justify-center gap-2 rounded-xl border border-[#18211D]/10 bg-[#F8F5EE] text-sm font-medium transition hover:border-[#18211D]/20 hover:bg-white"
+                onClick={handleGoogleSignUp}
+                disabled={isGoogleLoading}
+                className="flex h-[46px] items-center justify-center gap-2 rounded-xl border border-[#18211D]/10 bg-[#F8F5EE] text-sm font-medium transition hover:border-[#18211D]/20 hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <span className="font-semibold">G</span>
-                Continue with Google
+                {isGoogleLoading ? <span className="h-4 w-4 animate-spin rounded-full border border-[#173C32]/30 border-t-[#173C32]" /> : <span className="font-semibold">G</span>}
+                {isGoogleLoading ? "Connecting…" : "Continue with Google"}
               </button>
 
               <button

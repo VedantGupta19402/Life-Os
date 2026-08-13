@@ -23,10 +23,32 @@ export type AuthResponse = {
   user: { id: string; name: string; email: string };
 };
 
+export type LifeEntry = {
+  _id: string;
+  userId: string;
+  date: string;
+  sleep: number;
+  mood: number;
+  energy: number;
+  focus: number;
+  exercise: number;
+  studyHours: number;
+  screenTime: number;
+};
+
 export const authApi = {
   login: (email: string, password: string) =>
     apiRequest<AuthResponse>("/users/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string) =>
     apiRequest<AuthResponse>("/users/register", { method: "POST", body: JSON.stringify({ name, email, password }) }),
   logout: () => apiRequest<{ message: string }>("/users/logout"),
+};
+
+export const entriesApi = {
+  getAll: () => apiRequest<{ message: string; entries: LifeEntry[] }>("/entries/all"),
+  create: (entry: Omit<LifeEntry, "_id" | "userId">) =>
+    apiRequest<{ message: string; entry: LifeEntry }>("/entries/create", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    }),
 };
