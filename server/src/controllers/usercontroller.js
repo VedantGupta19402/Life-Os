@@ -1,6 +1,8 @@
 const usermodel = require("../models/usermodel")
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const firebaseAuth = require("../lib/firebase-admin");
 
 //register user
 async function registeruser(req, res){
@@ -102,9 +104,84 @@ function logoutUser(req, res){
         message: "user logged out successfully",
     });
 }
+async function googleLogin(req, res) {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+        return res.status(400).json({
+            message: "firebase id token is required"
+        });
+    }
+
+    let decodedToken;
+
+    try {
+        decodedToken = await firebaseAuth.verifyIdToken(idToken);
+    } catch (error) {
+        return res.status(401).json({
+            message: "invalid firebase token",
+        });
+    }
+
+    if (!decodedToken.email) {
+        return res.status(400).json({
+            message: "firebase account email is required"
+        });
+    }
+
+    if (!process.env.JWT_SECRET) {
+        return res.status(500).json({
+            message: "authentication is not configured"
+        });
+    }
+
+    try {
+        let user = await usermodel.findOne({ email: decodedToken.email });
+
+        if (!user) {
+            const generatedPassword = crypto.randomBytes(32).toString("hex");
+            const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+
+            user = await usermodel.create({
+                name: decodedToken.name || decodedToken.email.split("@")[0],
+                email: decodedToken.email,
+                password: hashedPassword
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                id: user._id,
+            },
+            process.env.JWT_SECRET
+        );
+
+        res.cookie("userToken", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        });
+
+        res.status(200).json({
+            message: "user logged in successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "google authentication failed"
+        });
+    }
+}
+
+
 
 module.exports = {
     registeruser,
     loginuser,
-    logoutUser
+    logoutUser,
+    googleLogin
 }

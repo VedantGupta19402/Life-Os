@@ -45,6 +45,8 @@ const LoginPage = () => {
 
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const data = await authApi.verifyFirebaseToken(idToken);
 
       console.log("Firebase Google user", {
         uid: result.user.uid,
@@ -52,6 +54,8 @@ const LoginPage = () => {
         displayName: result.user.displayName,
         photoURL: result.user.photoURL,
       });
+      console.log("Firebase verification response", data);
+      router.push("/dashboard");
     } catch (googleError) {
       setError(
         googleError instanceof Error

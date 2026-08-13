@@ -23,6 +23,11 @@ export type AuthResponse = {
   user: { id: string; name: string; email: string };
 };
 
+export type FirebaseVerificationResponse = {
+  message: string;
+  user: { uid: string; email?: string; name?: string };
+};
+
 export type LifeEntry = {
   _id: string;
   userId: string;
@@ -41,6 +46,11 @@ export const authApi = {
     apiRequest<AuthResponse>("/users/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   register: (name: string, email: string, password: string) =>
     apiRequest<AuthResponse>("/users/register", { method: "POST", body: JSON.stringify({ name, email, password }) }),
+  verifyFirebaseToken: (idToken: string) =>
+    apiRequest<FirebaseVerificationResponse>("/users/google", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    }),
   logout: () => apiRequest<{ message: string }>("/users/logout"),
 };
 
